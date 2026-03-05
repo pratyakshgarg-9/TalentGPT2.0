@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Dashboard - Create Post</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #f8fafc; padding: 40px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #f1f5f9; padding-bottom: 20px; }
+        .header h1 { margin: 0; color: #1e293b; font-size: 32px; }
+        .back-btn { padding: 10px 20px; background: #e67e22; color: rgb(11, 11, 11); border: none; border-radius: 6px; cursor: pointer; text-decoration: none; font-weight: 500; }
+
+        label { display: block; margin-top: 20px; font-weight: 600; color: #475569; margin-bottom: 8px; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; box-sizing: border-box; transition: border 0.2s; }
+        input:focus, textarea:focus { outline: none; border-color: #e67e22; }
+        textarea { height: 120px; resize: vertical; }
+        
+        .create-btn { width: 100%; margin-top: 30px; padding: 14px; background: #e67e22; color: rgb(16, 15, 15); border: none; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: 600; transition: background 0.2s; }
+        .create-btn:hover { background: #ffffff; }
+        
+        .helper-text { font-size: 14px; color: #040505; margin-top: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Create Job Posting</h1>
+        <a href="index.html" class="back-btn">Back to Home</a>
+    </div>
+
+    <div class="form-section">
+        <label>Company Name</label>
+        <input type="text" id="company_name" placeholder="e.g. Google, Amazon, StartupX">
+
+        <label>Job Requirements & Description</label>
+        <textarea id="requirements" placeholder="Paste the full job description and technical requirements here..."></textarea>
+        <p class="helper-text">This content will be used by AI to rank candidates.</p>
+
+        <label>Specific HR Interview Questions</label>
+        <textarea id="hr_questions" placeholder="1. How do you handle port conflicts?&#10;2. Explain your experience with Vector DBs..."></textarea>
+        
+        <button class="create-btn" onclick="submitToBackend()">Publish Job Blog</button>
+    </div>
+</div>
+
+<script>
+async function submitToBackend() {
+    const company_name = document.getElementById("company_name").value.trim();
+    const requirements = document.getElementById("requirements").value.trim();
+    const hr_questions = document.getElementById("hr_questions").value.trim();
+
+    if(!company_name || !requirements || !hr_questions) {
+        return alert("Please fill all fields to help the AI rank properly.");
+    }
+
+    const payload = {
+        company_name: company_name,
+        requirements: requirements,
+        hr_questions: hr_questions
+    };
+
+    try {
+        const response = await fetch('http://127.0.0.1:8000/api/jobs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            alert("Job successfully published to the database!");
+            window.location.href = 'index1.html'; // Redirect to see the new blog
+        } else {
+            const errorData = await response.json();
+            alert("Error: " + errorData.detail);
+        }
+    } catch (error) {
+        console.error("Connection failed:", error);
+        alert("Could not connect to the backend server. Make sure Uvicorn is running.");
+    }
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TalentGPT - HR Analytics</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(to bottom, #efe7df, #e2d4c5);
+            margin: 0; padding: 25px;
+        }
+        .container {
+            background: white; max-width: 1000px; margin: auto;
+            padding: 30px; border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.06);
+        }
+        .nav-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .back-btn { text-decoration: none; color: #080909; font-weight: bold; font-size: 14px; }
+        
+        .section-header {
+            border-left: 5px solid #e67e22;
+            padding-left: 15px; margin: 30px 0 15px 0;
+            font-size: 18px; color: #030303; font-weight: bold;
+        }
+
+        /* Profile Grid */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+        .profile-card {
+            background: #fdfcfb; padding: 20px; border-radius: 12px;
+            border: 1px solid #eee; position: relative;
+        }
+        .topper-border { border-top: 5px solid #e67e22; }
+        .near-miss-border { border-top: 5px solid #e67e22; }
+        
+        .score-badge {
+            position: absolute; top: 15px; right: 15px;
+            background: #1e293b; color: white;
+            padding: 4px 10px; border-radius: 20px; font-size: 11px;
+        }
+        .reason { font-size: 13px; font-style: italic; color: #64748b; margin-top: 12px; line-height: 1.4; }
+
+        /* Comparison Chart */
+        .chart-card { background: #f9f6f2; padding: 30px; border-radius: 15px; margin-top: 20px; }
+        .chart-flex { display: flex; justify-content: space-around; align-items: flex-end; height: 200px; }
+        .bar-box { text-align: center; width: 100px; }
+        .bar-wrapper {
+            height: 160px; display: flex; align-items: flex-end;
+            justify-content: center; background: #ece6df; border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .bar {
+            width: 40px; background: #e67e22; border-radius: 6px 6px 0 0;
+            color: white; font-size: 10px; font-weight: bold;
+            display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px;
+            transition: height 1s;
+        }
+        .label { font-size: 12px; font-weight: 600; color: #1e293b; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="nav-header">
+        <a href="index1.html" class="back-btn">← Back to Job Postings</a>
+        <h1 style="margin:0; font-size: 24px;">Candidate Ranking Results</h1>
+    </div>
+    
+    <div class="section-header">Elite Selection (Toppers)</div>
+    <div id="toppers-list" class="grid"></div>
+
+    <div class="section-header">Strong Potential (Near Misses)</div>
+    <div id="near-miss-list" class="grid"></div>
+
+    <div class="section-header">Comparative AI Performance Matrix</div>
+    <div class="chart-card">
+        <div id="graph-output" class="chart-flex"></div>
+    </div>
+</div>
+
+<script>
+    // MATCHING YOUR INDEX.HTML: We use 'job_id' instead of 'id'
+    const urlParams = new URLSearchParams(window.location.search);
+    const jobId = urlParams.get('job_id'); 
+
+    async function fetchResults() {
+        if (!jobId) {
+            document.body.innerHTML = "<h2 style='text-align:center;margin-top:50px;'>No Job ID provided in URL.</h2>";
+            return;
+        }
+
+        try {
+            const response = await fetch(`http://127.0.0.1:8000/api/results/${jobId}`);
+            if (!response.ok) throw new Error("Backend error");
+            
+            const data = await response.json();
+
+            // 1. Render Toppers
+            renderList(data.toppers, "toppers-list", "topper-border");
+            
+            // 2. Render Near Misses
+            renderList(data.near_miss, "near-miss-list", "near-miss-border");
+            
+            // 3. Render Combined Graph
+            const all = [...data.toppers, ...data.near_miss];
+            renderChart(all);
+
+        } catch (err) {
+            console.error(err);
+            document.getElementById("toppers-list").innerHTML = "Error loading results. Ensure Uvicorn is running.";
+        }
+    }
+
+    function renderList(list, elementId, borderClass) {
+        const el = document.getElementById(elementId);
+        if (!list || list.length === 0) {
+            el.innerHTML = "<p style='color:#94a3b8;'>No candidates found in this category.</p>";
+            return;
+        }
+        list.forEach(c => {
+            el.innerHTML += `
+                <div class="profile-card ${borderClass}">
+                    <span class="score-badge">${c.final_score}% Match</span>
+                    <h3 style="margin:0; font-size: 17px;">${c.full_name}</h3>
+                    <p style="font-size: 13px; margin: 5px 0;">Quiz Score: <strong>${c.quiz_score}/100</strong></p>
+                    <div class="reason">"${c.match_reason}"</div>
+                </div>
+            `;
+        });
+    }
+
+    function renderChart(candidates) {
+        const graph = document.getElementById("graph-output");
+        if (candidates.length === 0) {
+            graph.innerHTML = "No data for comparison.";
+            return;
+        }
+        candidates.forEach(c => {
+            // Scale bar height (100% = 150px)
+            const height = (c.final_score / 100) * 150;
+            graph.innerHTML += `
+                <div class="bar-box">
+                    <div class="bar-wrapper">
+                        <div class="bar" style="height:${height}px">
+                            ${c.final_score}%
+                        </div>
+                    </div>
+                    <div class="label">${c.full_name.split(' ')[0]}</div>
+                </div>
+            `;
+        });
+    }
+
+    window.onload = fetchResults;
+</script>
+
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Job Portal - Home</title>
+    <style>
+        body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: #f4f7f9; }
+
+        /* HEADER */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 60px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        h1 { margin: 0; font-size: 35px; color: #1e293b; }
+
+        .hr-btn {
+            padding: 10px 22px;
+            background: #0b0b10;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        /* POSTS CONTAINER */
+        .post-container { width: 80%; margin: 40px auto; }
+
+        .post-card {
+            background: white;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .post-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
+
+        .post-card h3 { margin-top: 0; color: #e67e22; font-size: 24px; }
+        .post-card p { color: #080909; line-height: 1.5; }
+
+        /* BUTTON GROUP */
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            border: none;
+            font-size: 14px;
+        }
+
+        .apply-btn { background: #101010; color: white; }
+        .apply-btn:hover { background: #060707; }
+
+        .view-results-btn { background: #e67e22; color: white; }
+        .view-results-btn:hover { background: #e67e22; }
+
+        .no-post { text-align: center; font-size: 18px; color: #64748b; margin-top: 60px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Talent GPT</h1>
+    <button class="hr-btn" onclick="location.href='hr1.html'">+ Post New Job</button>
+</header>
+
+<div class="post-container" id="posts">
+    </div>
+
+<script>
+async function loadPosts() {
+    const container = document.getElementById("posts");
+    
+    try {
+        // Fetching real data from your FastAPI backend
+        const response = await fetch('http://127.0.0.1:8000/api/jobs');
+        const jobs = await response.json();
+
+        if(jobs.length === 0) {
+            container.innerHTML = "<div class='no-post'>No Job Blogs available. HR needs to post some!</div>";
+            return;
+        }
+
+        // Render the jobs dynamically
+        container.innerHTML = jobs.map(job => `
+            <div class="post-card">
+                <h3>${job.company_name}</h3>
+                <p>${job.requirements.substring(0, 200)}...</p>
+                
+                <div class="button-group">
+                    <button class="btn apply-btn" onclick="goToApply(${job.id})">
+                        Apply as Candidate
+                    </button>
+
+                    <button class="btn view-results-btn" onclick="goToResults(${job.id})">
+                        View Ranking Results (HR)
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+    } catch (error) {
+        console.error("Fetch error:", error);
+        container.innerHTML = "<div class='no-post' style='color:red;'>Error connecting to backend server. Check if Uvicorn is running.</div>";
+    }
+}
+
+function goToApply(id) {
+    // Redirects to user application page with the specific Job ID
+    window.location.href = `user.html?job_id=${id}`;
+}
+
+function goToResults(id) {
+    // Redirects to HR results page with the specific Job ID
+    window.location.href = `results.html?job_id=${id}`;
+}
+
+window.onload = loadPosts;
+</script>
+
+</body>
+</html>
